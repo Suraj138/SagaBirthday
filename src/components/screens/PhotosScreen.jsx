@@ -23,17 +23,17 @@ export default function PhotosScreen({ onNext }) {
 
   // 11 images for the birthday surprise
   const photos = [
-    "/images/IMG1.jpeg",
-    "/images/IMG2.jpeg",
-    "/images/IMG3.jpeg",
-    "/images/IMG4.jpeg",
-    "/images/IMG5.jpeg",
-    "/images/IMG6.jpeg",
-    "/images/IMG7.jpeg",
-    "/images/IMG8.jpeg",
-    "/images/IMG9.jpeg",
-    "/images/IMG10.jpeg",
-    "/images/IMG11.jpeg",
+    "public/images/IMG1.jpeg",
+    "public/images/IMG2.jpeg",
+    "public/images/IMG3.jpeg",
+    "public/images/IMG4.jpeg",
+    "public/images/IMG5.jpeg",
+    "public/images/IMG6.jpeg",
+    "public/images/IMG7.jpeg",
+    "public/images/IMG8.jpeg",
+    "public/images/IMG9.jpeg",
+    "public/images/IMG10.jpeg",
+    "public/images/IMG11.jpeg",
   ]
 
   // Add floating hearts effect
