@@ -9,7 +9,7 @@ import "swiper/css/effect-cards"
 import "swiper/css/navigation"
 import "swiper/css/pagination"
 import confetti from "canvas-confetti"
-import { Mail, Heart, Star, Sparkles, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Play, Pause } from "lucide-react"
+import { Mail, Heart, Star, Sparkles, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Play, Pause, Image as ImageIcon } from "lucide-react"
 import GradientButton from "../GradientButton"
 
 export default function PhotosScreen({ onNext }) {
@@ -20,21 +20,34 @@ export default function PhotosScreen({ onNext }) {
   const [zoomLevel, setZoomLevel] = useState(1)
   const [showFullscreen, setShowFullscreen] = useState(false)
   const [loadedImages, setLoadedImages] = useState({})
+  const [imageErrors, setImageErrors] = useState({})
 
-  // 11 images for the birthday surprise
+  // 11 images for the birthday surprise - FIXED PATHS
+  // In Next.js, images in public folder should be accessed without /public
   const photos = [
-    "public/images/IMG1.jpg",
-    "public/images/IMG2.jpg",
-    "public/images/IMG3.jpg",
-    "public/images/IMG4.jpg",
-    "public/images/IMG5.jpg",
-    "public/images/IMG6.jpg",
-    "public/images/IMG7.jpg",
-    "public/images/IMG8.jpg",
-    "public/images/IMG9.jpg",
-    "public/images/IMG10.jpg",
-    "public/images/IMG11.jpg",
+    "/images/IMG1.jpg",
+    "/images/IMG2.jpg",
+    "/images/IMG3.jpg",
+    "/images/IMG4.jpg",
+    "/images/IMG5.jpg",
+    "/images/IMG6.jpg",
+    "/images/IMG7.jpg",
+    "/images/IMG8.jpg",
+    "/images/IMG9.jpg",
+    "/images/IMG10.jpg",
+    "/images/IMG11.jpg",
   ]
+
+  // Debug: Check if images are loading
+  useEffect(() => {
+    console.log("Available images:", photos)
+    photos.forEach((src, i) => {
+      const img = new Image()
+      img.src = src
+      img.onload = () => console.log(`✅ Image ${i+1} loaded: ${src}`)
+      img.onerror = () => console.log(`❌ Image ${i+1} failed: ${src}`)
+    })
+  }, [])
 
   // Add floating hearts effect
   useEffect(() => {
@@ -86,7 +99,14 @@ export default function PhotosScreen({ onNext }) {
   }
 
   const handleImageLoad = (index) => {
+    console.log(`Image ${index + 1} loaded successfully`)
     setLoadedImages(prev => ({ ...prev, [index]: true }))
+  }
+
+  const handleImageError = (index) => {
+    console.error(`Failed to load image ${index + 1}: ${photos[index]}`)
+    setImageErrors(prev => ({ ...prev, [index]: true }))
+    setLoadedImages(prev => ({ ...prev, [index]: true })) // Mark as loaded to hide skeleton
   }
 
   const togglePlayPause = () => {
@@ -126,6 +146,22 @@ export default function PhotosScreen({ onNext }) {
       onNext?.()
     }, 800)
   }
+
+  // Fallback image component for errors
+  const FallbackImage = ({ index }) => (
+    <div className="h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-pink-900/30 to-purple-900/30 rounded-2xl p-4">
+      <motion.div
+        animate={{ scale: [1, 1.1, 1] }}
+        transition={{ duration: 2, repeat: Infinity }}
+      >
+        <ImageIcon className="w-16 h-16 text-pink-400/50" />
+      </motion.div>
+      <p className="text-white/70 mt-4 text-center">
+        Memory #{index + 1} <br />
+        <span className="text-sm text-white/50">(Image loading...)</span>
+      </p>
+    </div>
+  )
 
   return (
     <div className="relative min-h-screen px-4 md:px-6 py-10 overflow-hidden bg-gradient-to-b from-purple-950/20 via-black to-pink-950/20">
@@ -318,19 +354,27 @@ export default function PhotosScreen({ onNext }) {
                       )}
                     </AnimatePresence>
 
-                    {/* Image */}
-                    <img
-                      src={src}
-                      alt={`Memory ${i + 1}`}
-                      className={`h-full w-full object-cover rounded-2xl transition-transform duration-300 group-hover:scale-105 ${
-                        loadedImages[i] ? 'opacity-100' : 'opacity-0'
-                      }`}
-                      onLoad={() => handleImageLoad(i)}
-                      loading="lazy"
-                    />
+                    {/* Image or Fallback */}
+                    {!imageErrors[i] ? (
+                      <img
+                        src={src}
+                        alt={`Memory ${i + 1}`}
+                        className={`h-full w-full object-cover rounded-2xl transition-transform duration-300 group-hover:scale-105 ${
+                          loadedImages[i] ? 'opacity-100' : 'opacity-0'
+                        }`}
+                        onLoad={() => handleImageLoad(i)}
+                        onError={() => handleImageError(i)}
+                        loading="lazy"
+                        crossOrigin="anonymous"
+                      />
+                    ) : (
+                      <FallbackImage index={i} />
+                    )}
                     
-                    {/* Overlay effects */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    {/* Overlay effects - only show if image loaded successfully */}
+                    {!imageErrors[i] && (
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    )}
                     
                     {/* Image number badge */}
                     <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm text-white text-sm font-semibold px-3 py-1 rounded-full">
@@ -355,20 +399,34 @@ export default function PhotosScreen({ onNext }) {
                       <Heart className="w-5 h-5 text-white" />
                     </motion.button>
                     
-                    {/* Zoom/fullscreen button */}
-                    <motion.button
-                      className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-sm p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={openFullscreen}
-                    >
-                      <ZoomIn className="w-5 h-5 text-white" />
-                    </motion.button>
+                    {/* Zoom/fullscreen button - only show if image loaded successfully */}
+                    {!imageErrors[i] && (
+                      <motion.button
+                        className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-sm p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={openFullscreen}
+                      >
+                        <ZoomIn className="w-5 h-5 text-white" />
+                      </motion.button>
+                    )}
                   </motion.div>
                 </SwiperSlide>
               ))}
             </Swiper>
           </motion.div>
+        </div>
+
+        {/* Debug info - Remove in production */}
+        <div className="text-center text-sm text-white/50">
+          <p>Image paths being used:</p>
+          <div className="flex flex-wrap justify-center gap-2 mt-2">
+            {photos.slice(0, 3).map((src, i) => (
+              <div key={i} className="text-xs bg-black/30 px-2 py-1 rounded">
+                {src.split('/').pop()}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Control Panel */}
@@ -406,7 +464,6 @@ export default function PhotosScreen({ onNext }) {
               className={`p-2 rounded-full ${zoomLevel <= 1 ? 'bg-white/10' : 'bg-gradient-to-r from-pink-500/20 to-purple-500/20 hover:from-pink-500/30 hover:to-purple-500/30'}`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              disabledClassName="opacity-50 cursor-not-allowed"
             >
               <ZoomOut className="w-5 h-5" />
             </motion.button>
@@ -421,7 +478,6 @@ export default function PhotosScreen({ onNext }) {
               className={`p-2 rounded-full ${zoomLevel >= 3 ? 'bg-white/10' : 'bg-gradient-to-r from-pink-500/20 to-purple-500/20 hover:from-pink-500/30 hover:to-purple-500/30'}`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              disabledClassName="opacity-50 cursor-not-allowed"
             >
               <ZoomIn className="w-5 h-5" />
             </motion.button>
@@ -533,11 +589,15 @@ export default function PhotosScreen({ onNext }) {
               exit={{ scale: 0.8 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <img
-                src={photos[currentIndex]}
-                alt={`Fullscreen memory ${currentIndex + 1}`}
-                className="max-w-full max-h-[80vh] object-contain rounded-lg"
-              />
+              {!imageErrors[currentIndex] ? (
+                <img
+                  src={photos[currentIndex]}
+                  alt={`Fullscreen memory ${currentIndex + 1}`}
+                  className="max-w-full max-h-[80vh] object-contain rounded-lg"
+                />
+              ) : (
+                <FallbackImage index={currentIndex} />
+              )}
               
               <button
                 onClick={closeFullscreen}
